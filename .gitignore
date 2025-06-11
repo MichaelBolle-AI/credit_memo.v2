@@ -1,5 +1,45 @@
+# Node dependencies
 node_modules/
+
+# Build output
 .next/
+out/
+dist/
+
+# Local environment variables
 .env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS-specific
 .DS_Store
-*.log
+Thumbs.db
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sw?
+
+# Vercel
+.vercel/
+
+# Test coverage
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# Optional: lockfiles — keep the one you use
+# If using npm:
+# package-lock.json
+
+# If using yarn:
+# yarn.lock
+
+# If using pnpm:
+# pnpm-lock.yaml
