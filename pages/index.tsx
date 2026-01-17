@@ -112,15 +112,17 @@ export default function Home() {
 
     const html2pdf = (await import('html2pdf.js')).default;
 
-    const opt = {
-      margin: 0.5,
-      filename: `Credit_Memo_${companyName || 'Company'}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
-    };
+  const opt = {
+  margin: 10,
+  filename: "credit-memo.pdf",
+  image: { type: "jpeg" as "jpeg", quality: 0.98 },
+  html2canvas: { scale: 2 },
+  jsPDF: { unit: "mm" as "mm", format: "a4" as "a4", orientation: "portrait" as "portrait" },
+};
 
-    html2pdf().from(element).set(opt).save();
+
+
+    html2pdf().from(element).set(opt as any).save();
   };
 
   return (

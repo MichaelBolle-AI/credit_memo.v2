@@ -7,8 +7,12 @@ export default async function handler(req, res) {
   const { user_id, name, ticker, industry, country, lei } = req.body;
 
   const { data, error } = await supabase
-    .from('portfolio')
-    .insert([{ user_id, name, ticker, industry, country, lei }], { returning: 'representation' });
+  .from("portfolio")
+  .insert([{ user_id, name, ticker, industry, country, lei }])
+  .select()
+  .single();
+
+
 
   if (error) {
     console.error('Supabase error:', error);
