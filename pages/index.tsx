@@ -9,7 +9,20 @@ export default function Home() {
   const [date, setDate] = useState('');
   const [memo, setMemo] = useState('');
   const [history, setHistory] = useState<string[]>([]);
+  const [portfolio, setPortfolio] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'generate' | 'history' | 'portfolio'>('generate');
+
+  const refreshPortfolio = async () => {
+    try {
+      const res = await fetch('/api/portfolio?user_id=demo_user');
+      const json = await res.json();
+      setPortfolio(json);
+    } catch (err) {
+      console.error('Failed to refresh portfolio:', err);
+      setPortfolio([]);
+    }
+  };
 
   useEffect(() => {
     async function loadHistory() {
@@ -30,6 +43,7 @@ export default function Home() {
     }
 
     loadHistory();
+    refreshPortfolio();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,11 +51,7 @@ export default function Home() {
     setLoading(true);
     setMemo('');
 
-    const prompt = `Generate a credit risk memorandum for the following:
-Company: ${companyName}
-Industry: ${industry}
-Date: ${date}
-Include Executive Summary, Business Overview, Financial Analysis, and Risk Assessment.`;
+    const prompt = `Generate a credit risk memorandum for the following:\nCompany: ${companyName}\nIndustry: ${industry}\nDate: ${date}\nInclude Executive Summary, Business Overview, Financial Analysis, and Risk Assessment.`;
 
     try {
       const res = await fetch('/api/generate', {
@@ -117,72 +127,92 @@ Include Executive Summary, Business Overview, Financial Analysis, and Risk Asses
     <main className="min-h-screen bg-slate-50 font-sans p-6 flex items-center justify-center">
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8">
         <h1 className="text-3xl font-bold mb-6 text-center">AI Credit Memo Generator</h1>
-        <form onSubmit={handleSubmit} className="space-y-4 mb-6">
-          <input
-            className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-400"
-            placeholder="Company Name"
-            value={companyName}
-            onChange={e => setCompanyName(e.target.value)}
-            required
-          />
-          <input
-            className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-400"
-            placeholder="Industry"
-            value={industry}
-            onChange={e => setIndustry(e.target.value)}
-            required
-          />
-          <input
-            className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-400"
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
-            required
-          />
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold shadow hover:bg-blue-700 transition"
-            disabled={loading}
-          >
-            {loading ? 'Generating...' : 'Generate'}
-          </button>
-        </form>
 
-        <div id="memo-content" className="prose prose-slate bg-gray-50 rounded-lg p-6 min-h-[160px]">
-          {memo ? <ReactMarkdown>{memo}</ReactMarkdown> : 'The generated memo will appear here.'}
+        <div className="flex justify-center mb-6 space-x-4">
+          <button onClick={() => setActiveTab('generate')} className={`px-4 py-2 font-semibold rounded ${activeTab === 'generate' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}>Generate Memo</button>
+          <button onClick={() => setActiveTab('history')} className={`px-4 py-2 font-semibold rounded ${activeTab === 'history' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}>Memo History</button>
+          <button onClick={() => setActiveTab('portfolio')} className={`px-4 py-2 font-semibold rounded ${activeTab === 'portfolio' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}>Portfolio</button>
         </div>
 
-        {memo && (
-          <div className="mt-4 space-x-4">
-            <button
-              className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition"
-              onClick={handleDownload}
-            >
-              Download as Word
-            </button>
-            <button
-              className="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 transition"
-              onClick={handlePdfDownload}
-            >
-              Download as PDF
-            </button>
+        {activeTab === 'generate' && (
+          <>
+            <form onSubmit={handleSubmit} className="space-y-4 mb-6">
+              <input className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-400" placeholder="Company Symbol (e.g., AAPL)" value={companyName} onChange={e => setCompanyName(e.target.value)} required />
+              <input className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-400" placeholder="Industry" value={industry} onChange={e => setIndustry(e.target.value)} required />
+              <input className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-400" type="date" value={date} onChange={e => setDate(e.target.value)} required />
+              <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold shadow hover:bg-blue-700 transition" disabled={loading}>{loading ? 'Generating...' : 'Generate'}</button>
+            </form>
+
+            {companyName && industry && (
+              <div className="mb-4 text-right">
+                <button className="text-sm px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600" onClick={async () => {
+                  const response = await fetch('/api/portfolio/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: 'demo_user', name: companyName, ticker: companyName, industry, country: 'N/A', lei: 'N/A' }),
+                  });
+                  if (response.ok) {
+                    await refreshPortfolio();
+                    alert('Company saved to portfolio!');
+                  } else {
+                    const err = await response.json();
+                    alert('Error saving to portfolio: ' + err.error);
+                  }
+                }}>Save to Portfolio</button>
+              </div>
+            )}
+
+            <div id="memo-content" className="prose prose-slate bg-gray-50 rounded-lg p-6 min-h-[160px]">
+              {memo ? <ReactMarkdown>{memo}</ReactMarkdown> : 'The generated memo will appear here.'}
+            </div>
+
+            {memo && (
+              <div className="mt-4 space-x-4">
+                <button className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition" onClick={handleDownload}>Download as Word</button>
+                <button className="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 transition" onClick={handlePdfDownload}>Download as PDF</button>
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === 'history' && (
+          <div className="mt-4">
+            {history.length > 0 ? (
+              <ul className="space-y-2">
+                {history.map((item, index) => (
+                  <li key={index} className="p-2 border rounded cursor-pointer hover:bg-gray-100" onClick={() => { setMemo(item); setActiveTab('generate'); }}>{item.slice(0, 100)}...</li>
+                ))}
+              </ul>
+            ) : <p className="text-center text-gray-500">No memo history available.</p>}
           </div>
         )}
 
-        {history.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-lg font-semibold mb-2">Memo History</h2>
-            <ul className="space-y-2">
-              {history.map((item, index) => (
-                <li
-                  key={index}
-                  className="p-2 border rounded cursor-pointer hover:bg-gray-100"
-                  onClick={() => setMemo(item)}
-                >
-                  {item.slice(0, 100)}...
-                </li>
-              ))}
-            </ul>
+        {activeTab === 'portfolio' && (
+          <div className="mt-4">
+            {portfolio.length > 0 ? (
+              <ul className="space-y-2">
+                {portfolio.map((entry, index) => (
+                  <li key={index} className="p-3 border rounded-lg hover:bg-gray-100">
+                    <div className="cursor-pointer" onClick={() => { setCompanyName(entry.name); setIndustry(entry.industry); setActiveTab('generate'); }}>
+                      <div className="font-semibold">{entry.name} ({entry.ticker})</div>
+                      <div className="text-sm text-gray-600">{entry.industry} | {entry.country} | LEI: {entry.lei}</div>
+                    </div>
+                    <div className="mt-2 text-right">
+                      <button className="text-xs text-red-600 hover:underline" onClick={async () => {
+                        const confirmDelete = confirm(`Remove ${entry.name} from your portfolio?`);
+                        if (!confirmDelete) return;
+                        const response = await fetch('/api/portfolio/remove', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ user_id: 'demo_user', lei: entry.lei }),
+                        });
+                        if (response.ok) refreshPortfolio();
+                      }}>Remove</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-gray-500 text-center">No saved companies in your portfolio.</p>}
           </div>
         )}
       </div>
