@@ -2,6 +2,24 @@ import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Document, Packer, Paragraph } from 'docx';
 import { saveAs } from 'file-saver';
+import type { GetServerSideProps } from 'next';
+import { getSupabaseServerClient } from '@/lib/supabaseServer';
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const supabase = getSupabaseServerClient(ctx.req as any, ctx.res as any);
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+
+  return { props: {} };
+};
 
 export default function Home() {
   const [companyName, setCompanyName] = useState('');
