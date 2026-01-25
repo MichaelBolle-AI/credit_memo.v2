@@ -1,14 +1,11 @@
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/router'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabaseBrowser } from '@/lib/supabaseBrowser'
 
 export default function Login() {
   const router = useRouter()
+  const supabase = supabaseBrowser()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -20,9 +17,12 @@ export default function Login() {
     setError(null)
 
     const { error } = await supabase.auth.signInWithPassword({ email, password })
+
     setLoading(false)
 
     if (error) return setError(error.message)
+
+    // This should now work because the helper client writes auth cookies
     router.push('/')
   }
 
