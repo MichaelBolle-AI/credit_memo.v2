@@ -102,50 +102,54 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
 
-  /* ---------------- Generate memo ---------------- */
+/* ---------------- Generate memo ---------------- */
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setMemo('')
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setLoading(true)
+  setMemo('')
 
-    const prompt = `Generate a credit risk memorandum for the following:
+  const prompt = `Generate a credit risk memorandum for the following:
 Company: ${companyName}
 Industry: ${industry}
 Date: ${date}
 Include Executive Summary, Business Overview, Financial Analysis, and Risk Assessment.`
 
-    try {
-      const r = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
-      })
+  try {
+const r = await fetch('/api/generate', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    prompt,
+    portfolio_id: selectedPortfolioId ?? null,
+    use_rag: Boolean(selectedPortfolioId),
+  }),
+})
 
-      const j = await r.json().catch(() => ({}))
+const j = await r.json().catch(() => ({}))
 
-      if (!r.ok) {
-        setMemo('Error: ' + (j.error || 'Request failed'))
-        return
-      }
-
-      const text = j.result || 'No memo generated.'
-      setMemo(text)
-
-      // Save memo server-side (auth-safe; no user_id from client)
-      await fetch('/api/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      }).catch(() => {})
-
-      setHistory(prev => [text, ...prev])
-    } catch (e) {
-      setMemo('Error: Unable to reach the server.')
-    } finally {
-      setLoading(false)
+    if (!r.ok) {
+      setMemo('Error: ' + (j.error || 'Request failed'))
+      return
     }
+
+    const text = j.result || 'No memo generated.'
+    setMemo(text)
+
+    // Save memo server-side (auth-safe; no user_id from client)
+    await fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    }).catch(() => {})
+
+    setHistory(prev => [text, ...prev])
+  } catch (e) {
+    setMemo('Error: Unable to reach the server.')
+  } finally {
+    setLoading(false)
   }
+}
 
   /* ---------------- Portfolio: add/remove ---------------- */
 
